@@ -50,6 +50,7 @@ class MainActivity : AppCompatActivity() {
                 val xmlResult = StringBuilder()
                 try {
                     val url = URL(urlPath)
+                    Log.d(TAG,"downloadXML: url = $url")
                     val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
                     val response = connection.responseCode
                     Log.d(TAG,"downloadXML: The response code was $response")
