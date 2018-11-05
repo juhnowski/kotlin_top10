@@ -13,6 +13,7 @@ class ParseApplications {
         Log.d(TAG,"parse called with $xmlData")
         var status = true
         var inEntry = false
+        var gotImage = false
         var textValue = ""
 
         try{
@@ -27,16 +28,21 @@ class ParseApplications {
                 when(eventType){
 
                     XmlPullParser.START_TAG -> {
-                        Log.d(TAG, "parse: Starting tag for " + tagName)
+//                        Log.d(TAG, "parse: Starting tag for " + tagName)
                         if(tagName == "entry") {
                             inEntry = true
+                        } else if ((tagName == "image")&&inEntry) {
+                            val imageResolution = xpp.getAttributeValue(null,"height")
+                            if (imageResolution.isNotEmpty()){
+                                gotImage = imageResolution == "53"
+                            }
                         }
                     }
 
                     XmlPullParser.TEXT -> textValue = xpp.text
 
                     XmlPullParser.END_TAG -> {
-                        Log.d(TAG,"parse: Ending tag for " + tagName)
+//                        Log.d(TAG,"parse: Ending tag for " + tagName)
                         if (inEntry) {
                             when(tagName) {
                                 "entry" -> {
@@ -49,7 +55,7 @@ class ParseApplications {
                                 "artist" -> currentRecord.artist = textValue
                                 "releaseDate" -> currentRecord.releaseDate = textValue
                                 "summary" -> currentRecord.summary = textValue
-                                "image" -> currentRecord.imageURL = textValue
+                                "image" -> if(gotImage) currentRecord.imageURL = textValue
                             }
                         }
                     }
@@ -58,10 +64,10 @@ class ParseApplications {
                 eventType = xpp.next()
             }
 
-            for (app in applications) {
-                Log.d(TAG, "************************")
-                Log.d(TAG, app.toString())
-            }
+//            for (app in applications) {
+//                Log.d(TAG, "************************")
+//                Log.d(TAG, app.toString())
+//            }
         } catch (e:Exception){
             e.printStackTrace()
             status = false

@@ -1,16 +1,20 @@
 package com.juhnowski.ilya.top10
 
+import android.content.Context
 import android.os.AsyncTask
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import java.io.BufferedReader
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.ListView
+import kotlinx.android.synthetic.main.activity_main.*
 import java.io.IOException
-import java.io.InputStreamReader
 import java.lang.Exception
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import kotlin.properties.Delegates
 
 
 class FeedEntry{
@@ -33,20 +37,66 @@ class FeedEntry{
 class MainActivity : AppCompatActivity() {
 
     private val TAG = "MainActivity"
+
+    private var downloadData: DownloadData? = null //by lazy { DownloadData(this, xmlListView) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Log.d(TAG,"onCreate called")
-        val downloadData = DownloadData()
-        downloadData.execute("http://ax.itunes.apple.com/WebObjects/MZStoreServices.woa/ws/RSS/topfreeapplications/limit=10/xml")
+        downloadUrl("http://ax.itunes.apple.com/WebObjects/MZStoreServices.woa/ws/RSS/topfreeapplications/limit=10/xml")
+//        Log.d(TAG,"onCreate called")
+//        downloadData.execute()
         Log.d(TAG, "onCreate: done")
     }
 
+    private fun downloadUrl(feedUrl:String) {
+        Log.d(TAG,"downloadUrl starting AsyncTask")
+        downloadData = DownloadData(this,xmlListView)
+        downloadData?.execute(feedUrl)
+        Log.d(TAG, "downloadUrl: done")
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.feeds_menu,menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        val feedUrl:String
+
+        when (item?.itemId) {
+            R.id.mnuFree ->
+                feedUrl = "http://ax.itunes.apple.com/WebObjects/MZStoreServices.woa/ws/RSS/topfreeapplications/limit=10/xml"
+            R.id.mnuPaid ->
+                feedUrl = "http://ax.itunes.apple.com/WebObjects/MZStoreServices.woa/ws/RSS/toppaidapplications/limit=10/xml"
+            R.id.mnuSongs ->
+                feedUrl = "http://ax.itunes.apple.com/WebObjects/MZStoreServices.woa/ws/RSS/topsongs/limit=10/xml"
+            else ->
+                return super.onOptionsItemSelected(item)
+        }
+
+        downloadUrl(feedUrl)
+        return true
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        downloadData?.cancel(true)
+    }
+
     companion object {
-        private class DownloadData: AsyncTask<String, Void, String>() {
+        private class DownloadData(context: Context, listView:ListView): AsyncTask<String, Void, String>() {
 
             private val TAG = "DownloadData"
+
+            var propContext: Context by Delegates.notNull()
+            var propListView: ListView by Delegates.notNull()
+
+            init {
+                propContext = context
+                propListView = listView
+            }
 
             override fun onPostExecute(result: String) {
                 super.onPostExecute(result)
@@ -54,6 +104,10 @@ class MainActivity : AppCompatActivity() {
                 val parseApplications = ParseApplications()
                 parseApplications.parse(result)
 
+//                val arrayAdapter = ArrayAdapter<FeedEntry>(propContext, R.layout.list_item, parseApplications.applications)
+//                propListView.adapter = arrayAdapter
+                val feedAdapter = FeedAdapter(propContext,R.layout.list_record,parseApplications.applications)
+                propListView.adapter = feedAdapter
             }
 
             override fun doInBackground(vararg url: String?): String {
@@ -71,6 +125,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     val url = URL(urlPath)
                     Log.d(TAG, "downloadXML: url = $url")
+
                     val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
                     val response = connection.responseCode
                     Log.d(TAG, "downloadXML: The response code was $response")

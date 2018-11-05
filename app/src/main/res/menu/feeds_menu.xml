@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="@string/free_apps" android:id="@+id/mnuFree"/>
+    <item android:title="@string/paid_apps" android:id="@+id/mnuPaid"/>
+    <item android:title="@string/songs" android:id="@+id/mnuSongs"/>
+</menu>
